@@ -21,7 +21,7 @@ make gen
 ## Тестирование с Evans
 ```bash
 # Подключение к серверу
-evans -p 50051 proto/user.proto
+evans -p 5000 proto/user.proto
 ```
 
 ### Примеры запросов:

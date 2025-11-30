@@ -1,10 +1,10 @@
-CREATE TABLE IF NOT EXISTS users {
+CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) NOT NULL,
     email VARCHAR(50) NOT NULL,
     age INT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
-};
+);
 
 ALTER TABLE users ADD CONSTRAINT check_age CHECK (age > 0);
 

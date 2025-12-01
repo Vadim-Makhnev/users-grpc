@@ -2,92 +2,109 @@ package main
 
 import (
 	"context"
-	"log"
+	"database/sql"
+	"flag"
+	"fmt"
+	"log/slog"
 	"net"
-	"sync"
+	"os"
+	"time"
 
+	"github.com/Vadim-Makhnev/grpc/internal/data"
 	"github.com/Vadim-Makhnev/grpc/proto"
-	"github.com/google/uuid"
+	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
-type userService struct {
-	proto.UnimplementedUserServiceServer
-	mu    sync.RWMutex
-	users map[string]*proto.UserResponse
-}
+//const version = "1.0.0"
 
-func NewUserService() *userService {
-	return &userService{
-		users: make(map[string]*proto.UserResponse),
+type config struct {
+	port int
+	env  string
+	db   struct {
+		dsn          string
+		maxOpenConns int
+		maxIdleConns int
+		maxIdleTime  time.Duration
 	}
 }
 
-func (s *userService) CreateUser(ctx context.Context, req *proto.CreateUserRequest) (*proto.UserResponse, error) {
-	if req.Name == "" || req.Email == "" {
-		return nil, status.Error(codes.InvalidArgument, "name and email are required")
-	}
-
-	if req.Age <= 0 {
-		return nil, status.Error(codes.InvalidArgument, "age must be greater than 0")
-	}
-
-	user := &proto.UserResponse{
-		Id:    uuid.NewString(),
-		Name:  req.Name,
-		Email: req.Email,
-		Age:   req.Age,
-	}
-
-	s.mu.Lock()
-	s.users[user.Id] = user
-	s.mu.Unlock()
-
-	log.Printf("Created user: %s (%s)", user.Name, user.Id)
-	return user, nil
-}
-
-func (s *userService) GetUser(ctx context.Context, req *proto.GetUserRequest) (*proto.UserResponse, error) {
-	if req.Id == "" {
-		return nil, status.Error(codes.InvalidArgument, "user id is required")
-	}
-
-	s.mu.RLock()
-	user, exists := s.users[req.Id]
-	s.mu.RUnlock()
-
-	if !exists {
-		return nil, status.Error(codes.NotFound, "user not found")
-	}
-
-	return user, nil
-}
-
-func (s *userService) ListUsers(ctx context.Context, req *proto.ListUsersRequest) (*proto.ListUsersResponse, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	users := make([]*proto.UserResponse, 0, len(s.users))
-	for _, user := range s.users {
-		users = append(users, user)
-	}
-
-	return &proto.ListUsersResponse{Users: users}, nil
+type application struct {
+	config config
+	logger *slog.Logger
+	models data.Models
 }
 
 func main() {
-	lis, err := net.Listen("tcp", ":5000")
+	var cfg config
+
+	flag.IntVar(&cfg.port, "port", 4000, "API server port")
+	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
+
+	flag.StringVar(&cfg.db.dsn, "db-dsn", os.Getenv("GRPC_DB_DSN"), "PostgreSQL DSN")
+
+	flag.IntVar(&cfg.db.maxOpenConns, "db-max-open-conns", 25, "PostgreSQL max open connections")
+	flag.IntVar(&cfg.db.maxIdleConns, "db-max-idle-conns", 25, "PostgreSQL max idle connections")
+	flag.DurationVar(&cfg.db.maxIdleTime, "db-max-idle-time", 15*time.Minute, "PostgreSQL max connection idle time")
+
+	flag.Parse()
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+
+	db, err := openDB(cfg)
 	if err != nil {
-		log.Fatalf("listener: %v", err)
+		logger.Error(err.Error())
+		os.Exit(1)
 	}
 
-	server := grpc.NewServer()
-	proto.RegisterUserServiceServer(server, NewUserService())
+	defer db.Close()
 
-	log.Println("gRPC server listening on :5000")
-	if err := server.Serve(lis); err != nil {
-		log.Fatalf("server: %v", err)
+	logger.Info("database connection pool established")
+
+	app := &application{
+		config: cfg,
+		logger: logger,
+		models: data.NewModels(db),
 	}
+
+	grpcServer := grpc.NewServer()
+
+	userService := &UserService{app: app}
+	proto.RegisterUserServiceServer(grpcServer, userService)
+
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.port))
+	if err != nil {
+		logger.Error(err.Error())
+		os.Exit(1)
+	}
+
+	logger.Info("gRPC server starting", "port", cfg.port, "env", cfg.env)
+
+	if err := grpcServer.Serve(lis); err != nil {
+		logger.Error(err.Error())
+	}
+}
+
+func openDB(cfg config) (*sql.DB, error) {
+	db, err := sql.Open("postgres", cfg.db.dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	db.SetMaxOpenConns(cfg.db.maxOpenConns)
+
+	db.SetMaxIdleConns(cfg.db.maxIdleConns)
+
+	db.SetConnMaxIdleTime(cfg.db.maxIdleTime)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err = db.PingContext(ctx)
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
+	return db, nil
 }

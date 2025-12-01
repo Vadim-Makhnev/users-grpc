@@ -75,3 +75,49 @@ func (u *UserService) GetUser(ctx context.Context, req *proto.GetUserRequest) (*
 
 	return resp, nil
 }
+
+func (u *UserService) ListUsers(ctx context.Context, req *proto.ListUsersRequest) (*proto.ListUsersResponse, error) {
+	var input struct {
+		data.Filters
+	}
+
+	v := validator.New()
+
+	input.Page = int(u.app.getInt32(req.Page, 1))
+	input.PageSize = int(u.app.getInt32(req.PageSize, 20))
+	input.Sort = u.app.getString(req.Sort, "id")
+	input.SortSafelist = []string{"id", "-id", "name", "email", "age"}
+
+	if data.ValidateFilters(v, input.Filters); !v.Valid() {
+		return nil, grpcutils.FailedValidation(v.Errors)
+	}
+
+	users, metadata, err := u.app.models.Users.GetAll(input.Filters)
+	if err != nil {
+		return nil, grpcutils.Internal(u.app.logger, err, "")
+	}
+
+	protoUsers := make([]*proto.UserResponse, len(users))
+	for i, user := range users {
+		protoUsers[i] = &proto.UserResponse{
+			Id:      user.ID,
+			Name:    user.Name,
+			Email:   user.Email,
+			Age:     user.Age,
+			Version: user.Version,
+		}
+	}
+
+	protoMetadata := &proto.MetaData{
+		TotalRecords: int32(metadata.TotalRecords),
+		Page:         int32(metadata.CurrentPage),
+		PageSize:     int32(metadata.PageSize),
+	}
+
+	resp := &proto.ListUsersResponse{
+		Users:    protoUsers,
+		Metadata: protoMetadata,
+	}
+
+	return resp, nil
+}

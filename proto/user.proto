@@ -21,7 +21,11 @@ message GetUserRequest {
     int64 id = 1;
 }
 
-message ListUsersRequest {}
+message ListUsersRequest {
+    int32 page = 1;
+    int32 page_size = 2;
+    string sort = 3;
+}
 
 message UserResponse {
     int64 id = 1;
@@ -33,6 +37,7 @@ message UserResponse {
 
 message ListUsersResponse {
     repeated UserResponse users = 1;
+    MetaData metadata = 2;
 }
 
 message UpdateUserRequest {
@@ -44,4 +49,10 @@ message UpdateUserRequest {
 
 message DeleteUserRequest {
   int64 id = 1;
+}
+
+message MetaData {
+    int32 total_records = 1;
+    int32 page = 2;
+    int32 page_size = 3;
 }

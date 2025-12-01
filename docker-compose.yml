@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: grpc_users
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5439:5432"
+    volumes:
+      - ./migrations:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user -d grpc_users" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - postgres
+
+  server:
+    build: .
+    ports:
+      - "4000:4000"
+    environment:
+      - GRPC_DB_DSN=host=postgres port=5432 user=user password=password dbname=grpc_users sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - postgres
+
+volumes:
+  postgres_data:
+
+
+networks:
+  postgres:
+    driver: bridge

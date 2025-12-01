@@ -7,6 +7,8 @@ service UserService {
     rpc CreateUser (CreateUserRequest) returns (UserResponse) {}
     rpc GetUser (GetUserRequest) returns (UserResponse) {}
     rpc ListUsers (ListUsersRequest) returns (ListUsersResponse) {}
+    rpc UpdateUser(UpdateUserRequest) returns (UserResponse) {}
+    rpc DeleteUser(DeleteUserRequest) returns (UserResponse) {}
 }
 
 message CreateUserRequest {
@@ -16,18 +18,30 @@ message CreateUserRequest {
 }
 
 message GetUserRequest {
-    string id = 1;
+    int64 id = 1;
 }
 
 message ListUsersRequest {}
 
 message UserResponse {
-    string id = 1;
+    int64 id = 1;
     string name = 2;
     string email = 3;
     int32 age = 4;
+    int32 version = 5;
 }
 
 message ListUsersResponse {
     repeated UserResponse users = 1;
+}
+
+message UpdateUserRequest {
+  int64 id = 1;
+  string name = 2;
+  string email = 3;
+  int32 age = 4;
+}
+
+message DeleteUserRequest {
+  int64 id = 1;
 }

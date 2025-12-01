@@ -5,9 +5,9 @@ import (
 	"errors"
 
 	"github.com/Vadim-Makhnev/grpc/internal/data"
+	"github.com/Vadim-Makhnev/grpc/internal/grpcutils"
 	"github.com/Vadim-Makhnev/grpc/internal/validator"
 	"github.com/Vadim-Makhnev/grpc/proto"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -28,30 +28,13 @@ func (u *UserService) CreateUser(ctx context.Context, req *proto.CreateUserReque
 	v := validator.New()
 
 	if data.ValidateUser(v, user); !v.Valid() {
-		badRequest := &errdetails.BadRequest{
-			FieldViolations: []*errdetails.BadRequest_FieldViolation{},
-		}
-
-		for field, message := range v.Errors {
-			badRequest.FieldViolations = append(badRequest.FieldViolations, &errdetails.BadRequest_FieldViolation{
-				Field:       field,
-				Description: message,
-			})
-		}
-
-		statusProto := status.New(codes.InvalidArgument, "invalid request")
-		statusWithDetails, err := statusProto.WithDetails(badRequest)
-		if err != nil {
-			return nil, status.Error(codes.Internal, "failed to construct error details")
-		}
-
-		u.app.logger.Warn("field error", "errors", v.Errors)
-		return nil, statusWithDetails.Err()
+		u.app.logger.Warn("validation failed", "errors", v.Errors)
+		return nil, grpcutils.FailedValidation(v.Errors)
 	}
 
 	err := u.app.models.Users.CreateUser(user)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, grpcutils.Internal(u.app.logger, err, "")
 	}
 
 	resp := &proto.UserResponse{
@@ -67,14 +50,18 @@ func (u *UserService) CreateUser(ctx context.Context, req *proto.CreateUserReque
 
 func (u *UserService) GetUser(ctx context.Context, req *proto.GetUserRequest) (*proto.UserResponse, error) {
 	id := req.Id
+	if id <= 0 {
+		return nil, status.Error(codes.InvalidArgument, "user id must be greater than zero")
+	}
 
 	user, err := u.app.models.Users.GetUser(id)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
-			return nil, status.Error(codes.NotFound, err.Error())
+
+			return nil, grpcutils.NotFound(err.Error())
 		default:
-			return nil, status.Error(codes.Internal, err.Error())
+			return nil, grpcutils.Internal(u.app.logger, err, "")
 		}
 	}
 

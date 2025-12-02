@@ -71,3 +71,15 @@ func InvalidArgument(logger *slog.Logger, err error, msg string) error {
 
 	return status.Error(codes.InvalidArgument, msg)
 }
+
+func EditConflict(logger *slog.Logger, err error, msg string) error {
+	if msg == "" {
+		msg = ErrMessageEditConflict
+	}
+
+	if logger != nil {
+		logger.Error("edit conflict", "error", err)
+	}
+
+	return status.Error(codes.Aborted, msg)
+}

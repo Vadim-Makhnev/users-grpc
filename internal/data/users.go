@@ -38,6 +38,10 @@ func (u *UserModel) CreateUser(user *User) error {
 }
 
 func (u *UserModel) GetUser(id int64) (*User, error) {
+	if id < 1 {
+		return nil, ErrInvalidArgument
+	}
+
 	query := `
 		SELECT id, name, email, age, created_at, version
 		FROM users
@@ -119,6 +123,40 @@ func (u *UserModel) GetAll(filters Filters) ([]*User, MetaData, error) {
 	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
 
 	return users, metadata, err
+}
+
+func (u *UserModel) DeleteUserById(id int64) (*User, error) {
+	if id < 1 {
+		return nil, ErrInvalidArgument
+	}
+
+	query := `
+		DELETE FROM users
+		WHERE id = $1
+		RETURNING  id, name, email, age, created_at, version`
+
+	var user User
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := u.DB.QueryRowContext(ctx, query, id).Scan(
+		&user.ID,
+		&user.Name,
+		&user.Email,
+		&user.Age,
+		&user.CreatedAt,
+		&user.Version,
+	)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrRecordNotFound
+		}
+		return nil, err
+	}
+
+	return &user, nil
 }
 
 func ValidateUser(v *validator.Validator, user *User) {

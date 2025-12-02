@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(50) UNIQUE NOT NULL,
     age INT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    version INT DEFAULT 0
+    version INT NOT NULL DEFAULT 1
 );
 
 ALTER TABLE users ADD CONSTRAINT check_age CHECK (age > 0);

@@ -23,7 +23,7 @@ type UserModel struct {
 	DB *sql.DB
 }
 
-func (u *UserModel) CreateUser(user *User) error {
+func (u UserModel) CreateUser(user *User) error {
 	query := `
 		INSERT INTO users (name, email, age)
 		VALUES ($1, $2, $3)
@@ -37,7 +37,7 @@ func (u *UserModel) CreateUser(user *User) error {
 	return u.DB.QueryRowContext(ctx, query, args...).Scan(&user.ID, &user.CreatedAt, &user.Version)
 }
 
-func (u *UserModel) GetUser(id int64) (*User, error) {
+func (u UserModel) GetUser(id int64) (*User, error) {
 	if id < 1 {
 		return nil, ErrInvalidArgument
 	}
@@ -74,7 +74,7 @@ func (u *UserModel) GetUser(id int64) (*User, error) {
 
 }
 
-func (u *UserModel) GetAll(filters Filters) ([]*User, MetaData, error) {
+func (u UserModel) GetAll(filters Filters) ([]*User, MetaData, error) {
 	query := fmt.Sprintf(`
 		SELECT count(*) OVER(), id, name, email, age, created_at, version
 		FROM users
@@ -125,7 +125,7 @@ func (u *UserModel) GetAll(filters Filters) ([]*User, MetaData, error) {
 	return users, metadata, err
 }
 
-func (u *UserModel) DeleteUserById(id int64) (*User, error) {
+func (u UserModel) DeleteUserById(id int64) (*User, error) {
 	if id < 1 {
 		return nil, ErrInvalidArgument
 	}
@@ -150,13 +150,41 @@ func (u *UserModel) DeleteUserById(id int64) (*User, error) {
 	)
 
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
 			return nil, ErrRecordNotFound
+		default:
+			return nil, err
 		}
-		return nil, err
 	}
 
 	return &user, nil
+}
+
+func (u UserModel) UpdateUser(user *User) error {
+	query := `
+		UPDATE users
+		SET name = $1, email = $2, age = $3, version = version + 1
+		WHERE id = $4 AND version = $5
+		RETURNING version`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	args := []any{user.Name, user.Email, user.Age, user.ID, user.Version}
+
+	err := u.DB.QueryRowContext(ctx, query, args...).Scan(&user.Version)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrEditConflict
+		default:
+			return err
+		}
+	}
+
+	return nil
 }
 
 func ValidateUser(v *validator.Validator, user *User) {

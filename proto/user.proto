@@ -3,11 +3,13 @@ syntax = "proto3";
 package user;
 option go_package = "./proto";
 
+import "google/protobuf/wrappers.proto";
+
 service UserService {
     rpc CreateUser (CreateUserRequest) returns (UserResponse) {}
     rpc GetUser (GetUserRequest) returns (UserResponse) {}
     rpc ListUsers (ListUsersRequest) returns (ListUsersResponse) {}
-    rpc UpdateUser(UpdateUserRequest) returns (Empty) {}
+    rpc UpdateUser(UpdateUserRequest) returns (UserResponse) {}
     rpc DeleteUser(DeleteUserRequest) returns (UserResponse) {}
 }
 
@@ -41,14 +43,14 @@ message ListUsersResponse {
 }
 
 message UpdateUserRequest {
-  int64 id = 1;
-  string name = 2;
-  string email = 3;
-  int32 age = 4;
+    int64 id = 1;
+    google.protobuf.StringValue name = 2;
+    google.protobuf.StringValue email = 3;
+    google.protobuf.Int32Value age = 4;
 }
 
 message DeleteUserRequest {
-  int64 id = 1;
+    int64 id = 1;
 }
 
 message MetaData {

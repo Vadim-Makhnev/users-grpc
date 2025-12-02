@@ -14,6 +14,7 @@ import (
 	"github.com/Vadim-Makhnev/grpc/proto"
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 //const version = "1.0.0"
@@ -71,6 +72,8 @@ func main() {
 
 	userService := &UserService{app: app}
 	proto.RegisterUserServiceServer(grpcServer, userService)
+
+	reflection.Register(grpcServer)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.port))
 	if err != nil {

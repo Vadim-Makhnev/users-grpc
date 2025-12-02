@@ -20,6 +20,7 @@ var (
 	ErrMessageInternalProblem        = "the server encountered a problem"
 	ErrMessageBadRequest             = "invalid request"
 	ErrMessageInvalidRequest         = "invalid request"
+	ErrMessageInvalidArgument        = "invalid argument"
 )
 
 func NotFound(msg string) error {
@@ -57,4 +58,16 @@ func Internal(logger *slog.Logger, err error, msg string) error {
 	}
 
 	return status.Error(codes.Internal, msg)
+}
+
+func InvalidArgument(logger *slog.Logger, err error, msg string) error {
+	if msg == "" {
+		msg = ErrMessageInvalidArgument
+	}
+
+	if logger != nil {
+		logger.Error("invalid argument", "error", err)
+	}
+
+	return status.Error(codes.InvalidArgument, msg)
 }

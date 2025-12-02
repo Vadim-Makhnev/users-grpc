@@ -143,3 +143,55 @@ func (u *UserService) DeleteUser(ctx context.Context, req *proto.DeleteUserReque
 
 	return resp, nil
 }
+
+func (u *UserService) UpdateUser(ctx context.Context, req *proto.UpdateUserRequest) (*proto.UserResponse, error) {
+	id := req.Id
+
+	user, err := u.app.models.Users.GetUser(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			return nil, grpcutils.NotFound("")
+		default:
+			return nil, grpcutils.Internal(u.app.logger, err, "")
+		}
+	}
+
+	if req.Name != nil {
+		user.Name = req.Name.Value
+	}
+
+	if req.Email != nil {
+		user.Email = req.Email.Value
+	}
+
+	if req.Age != nil {
+		user.Age = req.Age.Value
+	}
+
+	v := validator.New()
+
+	if data.ValidateUser(v, user); !v.Valid() {
+		return nil, grpcutils.FailedValidation(v.Errors)
+	}
+
+	err = u.app.models.Users.UpdateUser(user)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrEditConflict):
+			return nil, grpcutils.EditConflict(u.app.logger, err, "")
+		default:
+			return nil, grpcutils.Internal(u.app.logger, err, "")
+		}
+	}
+
+	resp := &proto.UserResponse{
+		Id:      user.ID,
+		Name:    user.Name,
+		Email:   user.Email,
+		Age:     user.Age,
+		Version: user.Version,
+	}
+
+	return resp, nil
+}

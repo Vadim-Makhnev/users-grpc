@@ -8,8 +8,6 @@ import (
 	"github.com/Vadim-Makhnev/grpc/internal/grpcutils"
 	"github.com/Vadim-Makhnev/grpc/internal/validator"
 	"github.com/Vadim-Makhnev/grpc/proto"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type UserService struct {
@@ -50,16 +48,14 @@ func (u *UserService) CreateUser(ctx context.Context, req *proto.CreateUserReque
 
 func (u *UserService) GetUser(ctx context.Context, req *proto.GetUserRequest) (*proto.UserResponse, error) {
 	id := req.Id
-	if id <= 0 {
-		return nil, status.Error(codes.InvalidArgument, "user id must be greater than zero")
-	}
 
 	user, err := u.app.models.Users.GetUser(id)
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrRecordNotFound):
-
-			return nil, grpcutils.NotFound(err.Error())
+			return nil, grpcutils.NotFound("")
+		case errors.Is(err, data.ErrInvalidArgument):
+			return nil, grpcutils.InvalidArgument(u.app.logger, err, "")
 		default:
 			return nil, grpcutils.Internal(u.app.logger, err, "")
 		}
@@ -117,6 +113,32 @@ func (u *UserService) ListUsers(ctx context.Context, req *proto.ListUsersRequest
 	resp := &proto.ListUsersResponse{
 		Users:    protoUsers,
 		Metadata: protoMetadata,
+	}
+
+	return resp, nil
+}
+
+func (u *UserService) DeleteUser(ctx context.Context, req *proto.DeleteUserRequest) (*proto.UserResponse, error) {
+	id := req.Id
+
+	user, err := u.app.models.Users.DeleteUserById(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			return nil, grpcutils.NotFound("")
+		case errors.Is(err, data.ErrInvalidArgument):
+			return nil, grpcutils.InvalidArgument(u.app.logger, err, "")
+		default:
+			return nil, grpcutils.Internal(u.app.logger, err, "")
+		}
+	}
+
+	resp := &proto.UserResponse{
+		Id:      user.ID,
+		Name:    user.Name,
+		Email:   user.Email,
+		Age:     user.Age,
+		Version: user.Version,
 	}
 
 	return resp, nil

@@ -10,3 +10,6 @@ docker-run:
 
 docker-down:
 	docker compose down -v
+
+evans:
+	@evans proto/user.proto --port 4000

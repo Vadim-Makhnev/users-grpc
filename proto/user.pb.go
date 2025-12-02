@@ -485,6 +485,42 @@ func (x *MetaData) GetPageSize() int32 {
 	return 0
 }
 
+type Empty struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Empty) Reset() {
+	*x = Empty{}
+	mi := &file_user_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Empty) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Empty) ProtoMessage() {}
+
+func (x *Empty) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Empty.ProtoReflect.Descriptor instead.
+func (*Empty) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{8}
+}
+
 var File_user_proto protoreflect.FileDescriptor
 
 const file_user_proto_rawDesc = "" +
@@ -520,14 +556,15 @@ const file_user_proto_rawDesc = "" +
 	"\bMetaData\x12#\n" +
 	"\rtotal_records\x18\x01 \x01(\x05R\ftotalRecords\x12\x12\n" +
 	"\x04page\x18\x02 \x01(\x05R\x04page\x12\x1b\n" +
-	"\tpage_size\x18\x03 \x01(\x05R\bpageSize2\xbb\x02\n" +
+	"\tpage_size\x18\x03 \x01(\x05R\bpageSize\"\a\n" +
+	"\x05Empty2\xb4\x02\n" +
 	"\vUserService\x12;\n" +
 	"\n" +
 	"CreateUser\x12\x17.user.CreateUserRequest\x1a\x12.user.UserResponse\"\x00\x125\n" +
 	"\aGetUser\x12\x14.user.GetUserRequest\x1a\x12.user.UserResponse\"\x00\x12>\n" +
-	"\tListUsers\x12\x16.user.ListUsersRequest\x1a\x17.user.ListUsersResponse\"\x00\x12;\n" +
+	"\tListUsers\x12\x16.user.ListUsersRequest\x1a\x17.user.ListUsersResponse\"\x00\x124\n" +
 	"\n" +
-	"UpdateUser\x12\x17.user.UpdateUserRequest\x1a\x12.user.UserResponse\"\x00\x12;\n" +
+	"UpdateUser\x12\x17.user.UpdateUserRequest\x1a\v.user.Empty\"\x00\x12;\n" +
 	"\n" +
 	"DeleteUser\x12\x17.user.DeleteUserRequest\x1a\x12.user.UserResponse\"\x00B\tZ\a./protob\x06proto3"
 
@@ -543,7 +580,7 @@ func file_user_proto_rawDescGZIP() []byte {
 	return file_user_proto_rawDescData
 }
 
-var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_user_proto_goTypes = []any{
 	(*CreateUserRequest)(nil), // 0: user.CreateUserRequest
 	(*GetUserRequest)(nil),    // 1: user.GetUserRequest
@@ -553,6 +590,7 @@ var file_user_proto_goTypes = []any{
 	(*UpdateUserRequest)(nil), // 5: user.UpdateUserRequest
 	(*DeleteUserRequest)(nil), // 6: user.DeleteUserRequest
 	(*MetaData)(nil),          // 7: user.MetaData
+	(*Empty)(nil),             // 8: user.Empty
 }
 var file_user_proto_depIdxs = []int32{
 	3, // 0: user.ListUsersResponse.users:type_name -> user.UserResponse
@@ -565,7 +603,7 @@ var file_user_proto_depIdxs = []int32{
 	3, // 7: user.UserService.CreateUser:output_type -> user.UserResponse
 	3, // 8: user.UserService.GetUser:output_type -> user.UserResponse
 	4, // 9: user.UserService.ListUsers:output_type -> user.ListUsersResponse
-	3, // 10: user.UserService.UpdateUser:output_type -> user.UserResponse
+	8, // 10: user.UserService.UpdateUser:output_type -> user.Empty
 	3, // 11: user.UserService.DeleteUser:output_type -> user.UserResponse
 	7, // [7:12] is the sub-list for method output_type
 	2, // [2:7] is the sub-list for method input_type
@@ -585,7 +623,7 @@ func file_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_proto_rawDesc), len(file_user_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

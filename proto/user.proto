@@ -7,7 +7,7 @@ service UserService {
     rpc CreateUser (CreateUserRequest) returns (UserResponse) {}
     rpc GetUser (GetUserRequest) returns (UserResponse) {}
     rpc ListUsers (ListUsersRequest) returns (ListUsersResponse) {}
-    rpc UpdateUser(UpdateUserRequest) returns (UserResponse) {}
+    rpc UpdateUser(UpdateUserRequest) returns (Empty) {}
     rpc DeleteUser(DeleteUserRequest) returns (UserResponse) {}
 }
 
@@ -56,3 +56,5 @@ message MetaData {
     int32 page = 2;
     int32 page_size = 3;
 }
+
+message Empty {}

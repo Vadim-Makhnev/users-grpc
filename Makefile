@@ -14,3 +14,6 @@ docker-down:
 
 evans:
 	@evans proto/user.proto --port 4000
+
+test:
+	go test -cover -v ./...

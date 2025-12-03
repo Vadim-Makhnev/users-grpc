@@ -11,8 +11,16 @@ var (
 	ErrInvalidArgument = errors.New("invalid argument")
 )
 
+type UserStorage interface {
+	CreateUser(user *User) error
+	GetUser(id int64) (*User, error)
+	GetAll(filters Filters) ([]*User, MetaData, error)
+	DeleteUserById(id int64) (*User, error)
+	UpdateUser(user *User) error
+}
+
 type Models struct {
-	Users UserModel
+	Users UserStorage
 }
 
 func NewModels(db *sql.DB) Models {

@@ -66,6 +66,15 @@ func Test_ValidateUser(t *testing.T) {
 				"email": "must be provided",
 			},
 		},
+		{
+			name: "multiple errors",
+			user: &User{},
+			wantErrs: map[string]string{
+				"email": "must be provided",
+				"name":  "must be provided",
+				"age":   "must be greater than 0",
+			},
+		},
 	}
 
 	for _, tt := range tests {

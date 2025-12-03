@@ -7,68 +7,67 @@
 - gRPC
 - Protocol Buffers
 - Evans (gRPC client)
+- PostgreSQL
+- Docker + docker-compose
 
 ## Функциональность
 - CreateUser - создание пользователя
 - GetUser - получение пользователя по ID  
-- ListUsers - список всех пользователей
+- ListUsers — список пользователей с пагинацией и сортировкой
+- UpdateUser — частичное или полное обновление пользователя
+- DeleteUser — удаление пользователя с возвратом данных  
 
 ## Генерация proto
 ```bash
 make gen
 ```
 
-## Тестирование с Evans
+## Запуск тестов 
+```bash
+make test
+```
+
+## Docker
+```bash
+# Запуск контейнера
+make docker-run
+# Остановка контейнера с очисткой
+make docker-down
+```
+
+## Тестирование
 ```bash
 # Подключение к серверу
-evans -p 5000 proto/user.proto
+evans -p 4000 proto/user.proto
 ```
 
-### Примеры запросов:
-
+# Тестирование с Evans
 ```bash
-# Создание пользователя
+# Создать пользователя
 call CreateUser
-name (TYPE_STRING) => Vadim
-email (TYPE_STRING) => vadim@example.com  
-age (TYPE_INT32) => 21
+name => Vadim
+email => vadim@example.com
+age => 25
 
-# Ответ:
-{
-  "age": 21,
-  "email": "vadim@example.com",
-  "id": "ac8b2c6c-1969-4c57-9d93-400cf7ef05c4",
-  "name": "Vadim"
-}
-```
+# Обновить только email (partial update)
+call UpdateUser
+id => 1
+email::value => new@example.com
 
-```bash
-# Получение пользователя по ID
-call GetUser
-id (TYPE_STRING) => ac8b2c6c-1969-4c57-9d93-400cf7ef05c4
-
-# Ответ:
-{
-  "age": 21,
-  "email": "vadim@example.com", 
-  "id": "ac8b2c6c-1969-4c57-9d93-400cf7ef05c4",
-  "name": "Vadim"
-}
-```
-
-```bash  
-# Получение списка всех пользователей
+# Получить список (с пагинацией)
 call ListUsers
+page => 1
+page_size => 10
+sort => name
+```
 
-# Ответ:
-{
-  "users": [
-    {
-      "age": 21,
-      "email": "vadim@example.com",
-      "id": "ac8b2c6c-1969-4c57-9d93-400cf7ef05c4",
-      "name": "Vadim"
-    }
-  ]
-}
+# Тестирование с grpcurl
+```bash
+# Создать
+grpcurl -plaintext -d '{"name":"Test","email":"test@example.com","age":30}' \
+  localhost:4000 user.UserService/CreateUser
+
+# Обновить
+grpcurl -plaintext -d '{"id":1,"email":"updated@example.com"}' \
+  localhost:4000 user.UserService/UpdateUser
 ```
